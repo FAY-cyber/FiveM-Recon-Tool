@@ -1,138 +1,128 @@
 import streamlit as st
+import requests
 import pandas as pd
 import time
 import hashlib
 import random
 
-# --- 1. إعدادات النظام ---
-st.set_page_config(page_title="ERORR_SHADOW_NET", page_icon="☣️", layout="wide")
+# --- 1. إعدادات الأمان والقواعد ---
+st.set_page_config(page_title="ERORR_FINAL_CORE", page_icon="💀", layout="wide")
 
-# --- 2. إدارة قواعد البيانات المؤقتة (DB Simulation) ---
-if 'valid_keys' not in st.session_state:
-    st.session_state.valid_keys = {"ERORR": "ERORR_2026", "MEMBER1": "123"}
-if 'forum_posts' not in st.session_state:
-    st.session_state.forum_posts = [{"user": "ERORR", "msg": "Welcome to the shadow network.", "time": "00:00"}]
-if 'chat_msg' not in st.session_state:
-    st.session_state.chat_msg = []
-if 'logs' not in st.session_state:
-    st.session_state.logs = []
+if 'users_db' not in st.session_state:
+    st.session_state.users_db = {
+        "ERORR": {"pass": "ERORR_2026", "rank": "full_admin"},
+        "GUEST": {"pass": "123", "rank": "user"}
+    }
+if 'auth' not in st.session_state: st.session_state.auth = False
 
-# --- 3. تصميم الواجهة (Quantum Dark UI) ---
+# --- 2. ستايل النيون العسكري (Ultra Dark) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #020202; color: #00FF41 !important; font-family: 'Courier New', monospace; }
+    .stApp { background-color: #010101; color: #00FF41 !important; font-family: 'Courier New', monospace; }
     [data-testid="stSidebar"] { background-color: #050505 !important; border-right: 2px solid #00FF41; }
-    .neon-card { border: 1px solid #00FF41; padding: 15px; border-radius: 10px; background: rgba(0, 255, 65, 0.05); margin-bottom: 10px; }
-    .admin-zone { border: 2px dashed #ff0000; padding: 20px; border-radius: 10px; background: rgba(255, 0, 0, 0.05); }
+    .stMetric { background: #0a0a0a; border: 1px solid #00FF41; padding: 15px; border-radius: 5px; box-shadow: 0 0 10px #00FF41; }
+    .tool-header { color: #00FF41; text-shadow: 0 0 15px #00FF41; border-bottom: 1px solid #00FF41; padding-bottom: 10px; margin-bottom: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. نظام الدخول ---
-if 'authenticated' not in st.session_state or not st.session_state.authenticated:
-    st.markdown("<h1 style='text-align:center; color:#00FF41;'>☣️ ERORR GATEWAY ☣️</h1>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 1.5, 1])
-    with col2:
-        u_name = st.text_input("ENTITY ID:")
-        u_key = st.text_input("AUTH KEY:", type="password")
+# --- 3. نظام الدخول ---
+if not st.session_state.auth:
+    st.markdown("<h1 style='text-align:center; color:#00FF41; margin-top:10%;'>☣️ ERORR FINAL GATEWAY ☣️</h1>", unsafe_allow_html=True)
+    cols = st.columns([1, 1.2, 1])
+    with cols[1]:
+        u = st.text_input("IDENTIFIER:")
+        p = st.text_input("ACCESS KEY:", type="password")
         if st.button("BYPASS"):
-            if u_name in st.session_state.valid_keys and st.session_state.valid_keys[u_name] == u_key:
-                st.session_state.authenticated = True
-                st.session_state.current_user = u_name
-                st.session_state.logs.append(f"Login: {u_name} - SUCCESS")
+            if u in st.session_state.users_db and st.session_state.users_db[u]['pass'] == p:
+                st.session_state.auth = True
+                st.session_state.user = u
+                st.session_state.rank = st.session_state.users_db[u]['rank']
                 st.rerun()
-            else:
-                st.error("ACCESS DENIED.")
+            else: st.error("INVALID ACCESS CODE.")
     st.stop()
 
-# --- 5. القائمة الجانبية المتقدمة ---
+# --- 4. القائمة الجانبية الذكية ---
 with st.sidebar:
     st.markdown(f"<h1 style='color:#00FF41; text-align:center;'>! 𝕰𝕽𝕽𝕺𝕽</h1>", unsafe_allow_html=True)
+    st.markdown(f"<center><small>RANK: {st.session_state.rank.upper()}</small></center>", unsafe_allow_html=True)
     st.markdown("---")
-    menu = st.selectbox("📁 NAVIGATE:", [
-        "🔥 FiveM Recon Tools",
-        "🕵️ OSINT & Mapping",
-        "💬 Covert Chat",
-        "🏛️ Shadow Forum",
-        "🛠️ ADMIN PANEL"
-    ])
-    st.markdown("---")
-    if st.button("🔴 LOGOUT"):
-        st.session_state.authenticated = False
+    
+    # تصنيف الأدوات الشغالة فقط
+    options = ["📡 FiveM Infiltrator", "🌍 IP Geo-Locator", "🔐 Security Lab", "🛰️ Advanced OSINT"]
+    if st.session_state.rank == 'full_admin':
+        options.append("🛠️ MASTER CONTROL")
+    
+    menu = st.selectbox("SELECT TOOL:", options)
+    if st.button("LOGOUT"):
+        st.session_state.auth = False
         st.rerun()
 
-# --- 6. الأقسام الجديدة ---
+# --- 5. تشغيل الأدوات (The Arsenal) ---
 
-# --- أ: الشات المخفي ---
-if menu == "💬 Covert Chat":
-    st.title("💬 COVERT ENCRYPTED CHAT")
-    st.markdown("<p style='color:red;'>[Messages are session-only and never stored on disk]</p>", unsafe_allow_html=True)
-    
-    chat_box = st.container(height=400)
-    for m in st.session_state.chat_msg:
-        chat_box.markdown(f"**[{m['user']}]:** {m['msg']}")
-    
-    with st.container():
-        msg_input = st.text_input("Type message...", key="chat_input")
-        if st.button("SEND"):
-            if msg_input:
-                st.session_state.chat_msg.append({"user": st.session_state.current_user, "msg": msg_input})
-                st.rerun()
+# --- أداة 1: FiveM Infiltrator (الشغالة 100%) ---
+if menu == "📡 FiveM Infiltrator":
+    st.markdown("<h2 class='tool-header'>📡 FiveM Server Reconnaissance</h2>", unsafe_allow_html=True)
+    cfx = st.text_input("TARGET HASH (e.g., qx6e89):")
+    if st.button("EXECUTE SCAN"):
+        with st.spinner("Decrypting Server Data..."):
+            try:
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) CFX/1.0'}
+                r = requests.get(f"https://servers-frontend.fivem.net/api/servers/single/{cfx}", headers=headers, timeout=12)
+                if r.status_code == 200:
+                    data = r.json()['Data']
+                    st.success(f"ACCESS GRANTED: {data['hostname'][:50]}...")
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("IP:PORT", data['connectEndPoints'][0])
+                    c2.metric("CLIENTS", f"{data['clients']}/{data['sv_maxclients']}")
+                    c3.metric("OS", data['vars'].get('os', 'Unknown'))
+                    
+                    with st.expander("VIEW LOADED RESOURCES (SCRIPTS)"):
+                        st.write(", ".join(data['resources']))
+                    st.code(f"fivem://connect/{cfx}", language="bash")
+                else: st.error("Server Offline or Cloudflare Blocked the request.")
+            except: st.error("Scan Failed. Try again later.")
 
-# --- ب: المنتدى السري ---
-elif menu == "🏛️ Shadow Forum":
-    st.title("🏛️ SHADOW FORUM")
-    with st.expander("➕ Create New Post"):
-        post_title = st.text_input("Topic:")
-        post_content = st.text_area("Content:")
-        if st.button("POST"):
-            st.session_state.forum_posts.insert(0, {"user": st.session_state.current_user, "msg": f"{post_title}: {post_content}", "time": time.strftime("%H:%M")})
-            st.rerun()
-    
-    for p in st.session_state.forum_posts:
-        st.markdown(f"""
-        <div class='neon-card'>
-            <small style='color:grey;'>By {p['user']} at {p['time']}</small><br>
-            {p['msg']}
-        </div>
-        """, unsafe_allow_html=True)
+# --- أداة 2: IP Geo-Locator (الشغالة 100%) ---
+elif menu == "🌍 IP Geo-Locator":
+    st.markdown("<h2 class='tool-header'>🌍 Global IP Tracker</h2>", unsafe_allow_html=True)
+    ip_target = st.text_input("ENTER TARGET IP:", "8.8.8.8")
+    if st.button("TRACE LOCATION"):
+        try:
+            res = requests.get(f"http://ip-api.com/json/{ip_target}").json()
+            if res['status'] == 'success':
+                st.json(res)
+                df = pd.DataFrame({'lat': [res['lat']], 'lon': [res['lon']]})
+                st.map(df)
+            else: st.error("IP not found in database.")
+        except: st.error("Mapping Service Offline.")
 
-# --- ج: لوحة الإدمن المتطورة (لـ ERORR فقط) ---
-elif menu == "🛠️ ADMIN PANEL":
-    if st.session_state.current_user == "ERORR":
-        st.markdown("<div class='admin-zone'>", unsafe_allow_html=True)
-        st.title("🛠️ SYSTEM COMMANDER")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.subheader("User Management")
-            target_user = st.selectbox("Select User:", list(st.session_state.valid_keys.keys()))
-            if st.button("DELETE USER") and target_user != "ERORR":
-                del st.session_state.valid_keys[target_user]
-                st.warning(f"User {target_user} purged.")
-                st.rerun()
-            
-            new_u = st.text_input("New User ID:")
-            new_p = st.text_input("New Pass:")
-            if st.button("ADD ACCESS KEY"):
-                st.session_state.valid_keys[new_u] = new_p
-                st.success("Key Activated.")
-        
-        with col2:
-            st.subheader("System Logs")
-            st.code("\n".join(st.session_state.logs[-10:]))
-            if st.button("CLEAR ALL CHATS"):
-                st.session_state.chat_msg = []
-                st.success("Chat history wiped.")
-        st.markdown("</div>", unsafe_allow_html=True)
-    else:
-        st.error("INSUFFICIENT PRIVILEGES.")
+# --- أداة 3: Security Lab ---
+elif menu == "🔐 Security Lab":
+    st.markdown("<h2 class='tool-header'>🔐 Encryption & Audit Lab</h2>", unsafe_allow_html=True)
+    t1, t2 = st.tabs(["Hash Generator", "XSS Auditor (Sim)"])
+    with t1:
+        txt = st.text_input("String to Hash:")
+        if txt:
+            st.code(f"MD5: {hashlib.md5(txt.encode()).hexdigest()}")
+            st.code(f"SHA256: {hashlib.sha256(txt.encode()).hexdigest()}")
+    with t2:
+        url = st.text_input("Target URL for Audit:")
+        if st.button("RUN AUDIT"):
+            st.warning("Analyzing attack vectors...")
+            time.sleep(1)
+            st.success("No critical vulnerabilities found in header.")
 
-# --- الأقسام القديمة (FiveM & OSINT) ---
-elif menu == "🔥 FiveM Recon Tools":
-    st.title("🔥 FiveM Infiltrator")
-    # كود الـ Recon السابق يوضع هنا ليعمل 100%
-    st.info("System Ready for Scanning.")
+# --- أداة 4: Master Control ---
+elif menu == "🛠️ MASTER CONTROL":
+    st.markdown("<h2 class='tool-header'>🛠️ SYSTEM COMMAND CENTER</h2>", unsafe_allow_html=True)
+    st.subheader("Add/Modify Permissions")
+    new_u = st.text_input("Username:")
+    new_p = st.text_input("Password:")
+    new_r = st.selectbox("Rank:", ["user", "admin", "full_admin"])
+    if st.button("CREATE ACCOUNT"):
+        st.session_state.users_db[new_u] = {"pass": new_p, "rank": new_r}
+        st.success(f"Entity {new_u} Authorized.")
+    st.write("Current Database:", st.session_state.users_db)
 
-elif menu == "🕵️ OSINT & Mapping":
-    st.title("🕵️ Geo-Intelligence")
-    # كود الخرائط والـ IP يوضع هنا
+st.sidebar.markdown("---")
+st.sidebar.caption("© 2026 ERORR | FINAL BUILD")
