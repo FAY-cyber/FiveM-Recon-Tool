@@ -5,81 +5,69 @@ import socket
 import folium
 from streamlit_folium import st_folium
 
-st.set_page_config(page_title="FiveM Cyber Auditor", page_icon="🛡️", layout="wide")
+# إعداد الصفحة لتعمل بثبات
+st.set_page_config(page_title="FiveM Cyber Recon", page_icon="🛡️", layout="wide")
 
-def get_geo_info(ip):
+# دالة فحص المنافذ بطريقة آمنة لا تسبب انهيار الكود
+def safe_check_port(ip, port):
     try:
-        res = requests.get(f"http://ip-api.com/json/{ip}").json()
-        return res
-    except: return None
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.5) # وقت قصير لعدم تعليق الموقع
+            return s.connect_ex((ip, port)) == 0
+    except:
+        return False
 
-def check_port(ip, port):
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(1)
-        result = sock.connect_ex((ip.split(':')[0], port))
-        sock.close()
-        return result == 0
-    except: return False
+st.title("🛡️ FiveM Server Security Dashboard")
+st.sidebar.header("Control Panel")
+cfx_code = st.sidebar.text_input("Target CFX Code:", "qx6e89")
 
-# واجهة الموقع
-st.title("🛡️ FiveM Server Security Auditor")
-cfx_code = st.sidebar.text_input("Enter Target CFX:", "qx6e89")
+if st.sidebar.button("Execute Deep Scan"):
+    with st.spinner('Accessing Cfx.re API...'):
+        headers = {'user-agent': 'ios:2.65.0:488:14:iPhone13,3'}
+        try:
+            r = requests.get(f"https://servers-frontend.fivem.net/api/servers/single/{cfx_code}", headers=headers)
+            if r.status_code == 200:
+                data = r.json().get("Data")
+                full_ip = data['connectEndPoints'][0]
+                pure_ip = full_ip.split(':')[0]
 
-if st.sidebar.button("Run Full Security Audit"):
-    headers = {'user-agent': 'ios:2.65.0:488:14:iPhone13,3'}
-    data = requests.get(f"https://servers-frontend.fivem.net/api/servers/single/{cfx_code}", headers=headers).json().get("Data")
-    
-    if data:
-        full_ip = data['connectEndPoints'][0]
-        pure_ip = full_ip.split(':')[0]
-        
-        # --- قسم الخريطة والموقع ---
-        st.header("📍 Server Geo-Location")
-        geo = get_geo_info(pure_ip)
-        if geo and geo['status'] == 'success':
-            m = folium.Map(location=[geo['lat'], geo['lon']], zoom_start=10)
-            folium.Marker([geo['lat'], geo['lon']], popup=geo['isp']).add_to(m)
-            st_folium(m, height=300, width=1200)
-            st.write(f"**Hosting:** {geo['isp']} | **City:** {geo['city']}, {geo['country']}")
+                # عرض المعلومات الأساسية
+                st.success(f"Target Acquired: {data['hostname'][:50]}")
+                
+                tab1, tab2 = st.tabs(["🗺️ Geo-Location", "🔍 Vulnerabilities"])
 
-        # --- قسم فحص الثغرات (Vulnerability Scanner) ---
-        st.markdown("---")
-        st.header("🔍 Security Vulnerability Report")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("🛠️ Port Scanning")
-            # فحص الـ RCON (أخطر ثغرة في فايف ام)
-            is_rcon_open = check_port(pure_ip, 30120) # المنفذ الافتراضي
-            if is_rcon_open:
-                st.error("❌ CRITICAL: RCON Port (30120) is Open! Possible Remote Code Execution.")
+                with tab1:
+                    # جلب الموقع الجغرافي
+                    geo = requests.get(f"http://ip-api.com/json/{pure_ip}").json()
+                    if geo.get('status') == 'success':
+                        m = folium.Map(location=[geo['lat'], geo['lon']], zoom_start=8)
+                        folium.Marker([geo['lat'], geo['lon']], popup=geo['isp']).add_to(m)
+                        st_folium(m, height=400, width=1000)
+                    else:
+                        st.warning("Could not resolve Geo-location (Proxy detected)")
+
+                with tab2:
+                    st.subheader("Critical Security Checks")
+                    # فحص RCON
+                    if safe_check_port(pure_ip, 30120):
+                        st.error("🚨 CRITICAL: RCON port 30120 is EXPOSED!")
+                    else:
+                        st.info("✅ RCON port is secure (closed).")
+                    
+                    # فحص الملفات المسربة
+                    with st.expander("Information Disclosure Check"):
+                        for endpoint in ["/players.json", "/info.json"]:
+                            check_url = f"http://{full_ip}{endpoint}"
+                            try:
+                                res = requests.get(check_url, timeout=2)
+                                if res.status_code == 200:
+                                    st.warning(f"⚠️ Leak Found: {endpoint} is public.")
+                            except: pass
+
             else:
-                st.success("✅ RCON Port is filtered/closed.")
+                st.error("Invalid CFX Code or API Rate Limit exceeded.")
+        except Exception as e:
+            st.error(f"Error during scan: {str(e)}")
 
-            # فحص قاعدة البيانات (MySQL/MariaDB)
-            if check_port(pure_ip, 3306):
-                st.warning("⚠️ WARNING: MySQL Port (3306) is Publicly Exposed. Risk of Brute Force.")
-
-        with col2:
-            st.subheader("📄 Configuration Leaks")
-            # فحص ملفات الحساسة
-            test_files = ["/players.json", "/info.json", "/dynamic.json"]
-            for file in test_files:
-                try:
-                    r = requests.get(f"http://{full_ip}{file}", timeout=2)
-                    if r.status_code == 200:
-                        st.warning(f"⚠️ Information Leak: `{file}` is accessible to anyone.")
-                except: pass
-
-        # --- قسم تحليل الـ Artifacts (الإصدار) ---
-        st.markdown("---")
-        server_version = data['vars'].get('gamename', 'Unknown')
-        st.subheader(f"⚙️ Artifacts Analysis: {data.get('server', 'N/A')}")
-        if "linux" in data.get('server', '').lower():
-            st.info("System running on Linux. Generally more secure against certain exploits.")
-        else:
-            st.warning("System running on Windows. Ensure latest security patches are applied.")
-
-    else:
-        st.error("Could not reach server.")
+st.sidebar.markdown("---")
+st.sidebar.write("Developed for Cybersecurity Academic Research")
