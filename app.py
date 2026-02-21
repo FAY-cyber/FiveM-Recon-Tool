@@ -3,112 +3,144 @@ import requests
 import pandas as pd
 import time
 import socket
+import hashlib
+import random
 
-# --- إعدادات النظام ---
-st.set_page_config(page_title="ERORR_HACKER_SUITE", page_icon="☣️", layout="wide")
+# --- 1. CONFIGURATION & NEON THEME ---
+st.set_page_config(page_title="ERORR_QUANTUM_CORE", page_icon="⚛️", layout="wide")
 
-# --- CSS المجنون (الخاص بـ ERORR) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #050505; color: #00FF41 !important; }
-    .stSidebar { background-color: #0a0a0a !important; border-right: 1px solid #00FF41; }
-    .profile-card {
-        background-color: #111111; border-radius: 12px; overflow: hidden;
-        border: 1px solid #333; color: white !important; margin-bottom: 20px;
+    /* تحويل الواجهة بالكامل لنظام Cyber-Grid */
+    .stApp {
+        background-color: #050505;
+        background-image: linear-gradient(rgba(0, 255, 65, 0.02) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(0, 255, 65, 0.02) 1px, transparent 1px);
+        background-size: 40px 40px;
     }
-    .profile-banner { height: 60px; background: linear-gradient(90deg, #00FF41, #000); }
-    .profile-content { padding: 15px; position: relative; }
-    .profile-avatar {
-        width: 60px; height: 60px; border-radius: 50%; border: 3px solid #111;
-        position: absolute; top: -30px; left: 15px;
-        background-image: url('https://i.imgur.com/M6LpD8t.png'); background-size: cover;
+    
+    /* القائمة الجانبية الاحترافية */
+    [data-testid="stSidebar"] {
+        background-color: #0a0a0a !important;
+        border-right: 1px solid #1a1a1a;
     }
-    .profile-name { margin-top: 30px; font-weight: bold; font-size: 18px; }
-    .stButton>button {
-        border: 1px solid #00FF41 !important; background: transparent !important;
-        color: #00FF41 !important; width: 100%; box-shadow: 0 0 5px #00FF41;
+
+    /* تأثير النيون للأدوات */
+    .cyber-card {
+        background: rgba(10, 10, 10, 0.8);
+        border: 1px solid #00FF41;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+        font-family: 'Courier New', monospace;
     }
-    .stButton>button:hover { background: #00FF41 !important; color: black !important; }
+
+    /* العناوين المتحركة */
+    .glitch {
+        color: #00FF41;
+        font-size: 30px;
+        font-weight: bold;
+        text-transform: uppercase;
+        text-shadow: 2px 2px #ff0000, -2px -2px #0000ff;
+        animation: glitch 1s infinite;
+    }
+
+    @keyframes glitch {
+        0% { transform: translate(0); }
+        20% { transform: translate(-2px, 2px); }
+        40% { transform: translate(-2px, -2px); }
+        60% { transform: translate(2px, 2px); }
+        80% { transform: translate(2px, -2px); }
+        100% { transform: translate(0); }
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- القائمة الجانبية ---
+# --- 2. SIDEBAR: THE COMMAND CENTER ---
 with st.sidebar:
-    st.markdown("""
-        <div class="profile-card">
-            <div class="profile-banner"></div>
-            <div class="profile-content">
-                <div class="profile-avatar"></div>
-                <div class="profile-name">! 𝕰𝕽𝕽𝕺𝕽 🌙</div>
-                <div style="font-size: 12px; color: #00FF41;">[ ELITE DEVELOPER ]</div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<div class='glitch'>ERORR AI</div>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #444;'>[ QUANTUM CYBERCORE v8.0 ]</p>", unsafe_allow_html=True)
     st.markdown("---")
-    page = st.radio("CHOOSE WEAPON:", ["📡 Server Recon", "🕵️ User Tracer", "⚡ Port Scanner (NEW)"])
-
-# --- الدالة المساعدة لفحص المنافذ ---
-def scan_port(ip, port):
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.settimeout(0.5)
-            return s.connect_ex((ip, port)) == 0
-    except: return False
-
-# --- الصفحات ---
-
-if page == "📡 Server Recon":
-    st.title("📡 FiveM Infrastructure Recon")
-    # ... (كود الصفحة الأولى السابق)
-    cfx = st.text_input("ENTER CFX HASH:")
-    if st.button("RUN SCAN"):
-        st.write("Fetching Data...")
-
-elif page == "🕵️ User Tracer":
-    st.title("🕵️ Entity OSINT Tracer")
-    # ... (كود الصفحة الثانية السابق)
-    st.write("Tracing digital footprints...")
-
-elif page == "⚡ Port Scanner (NEW)":
-    st.title("⚡ Advanced Port & Service Scanner")
-    st.write("هذه الأداة تحاكي عمل Nmap لاكتشاف الخدمات المفتوحة.")
     
-    target_ip = st.text_input("ENTER TARGET IP (e.g. 1.1.1.1):", placeholder="127.0.0.1")
+    st.subheader("📡 DATA MODULES")
+    main_module = st.selectbox("SELECT OPERATION:", [
+        "🌐 NETWORK WARFARE", 
+        "🕵️ OSINT & FORENSICS", 
+        "🔐 CRYPTO-LAB", 
+        "🛠️ GENERAL EXPLOITS",
+        "🛑 SHUTDOWN PROTOCOL"
+    ])
     
-    ports_to_scan = {
-        21: "FTP (File Transfer)",
-        22: "SSH (Remote Access)",
-        80: "HTTP (Web Server)",
-        443: "HTTPS (Secure Web)",
-        3306: "MySQL (Database)",
-        30120: "FiveM Default Port"
-    }
+    st.markdown("---")
+    # محاكاة حالة النظام
+    st.write("CPU LOAD:")
+    st.progress(random.randint(10, 90))
+    st.write("ENCRYPTION: **ACTIVE**")
+    st.write("ANONYMITY: **HIGH**")
 
-    if st.button("START NETWORK AUDIT"):
-        st.info(f"Scanning {target_ip} for common vulnerabilities...")
-        results = []
-        progress = st.progress(0)
-        
-        for i, (port, desc) in enumerate(ports_to_scan.items()):
-            is_open = scan_port(target_ip, port)
-            status = "🔓 OPEN" if is_open else "🔒 CLOSED"
-            results.append({"Port": port, "Service": desc, "Status": status})
-            progress.progress((i + 1) / len(ports_to_scan))
-            time.sleep(0.2)
-            
-        df = pd.DataFrame(results)
-        st.table(df)
+# --- 3. DYNAMIC CONTENT: THE TOOLS ---
 
-        # تحليل سبراني للنتائج
-        st.subheader("☣️ Vulnerability Analysis")
-        open_ports = [r['Port'] for r in results if "OPEN" in r['Status']]
-        if open_ports:
-            for p in open_ports:
-                if p == 3306: st.error("⚠️ MySQL exposed! Risk: SQL Injection / Brute Force.")
-                if p == 22: st.warning("⚠️ SSH open. Risk: Credential Stuffing.")
-                if p == 30120: st.info("ℹ️ FiveM Port active. Target is a gaming server.")
-        else:
-            st.success("No common ports exposed. Target seems hardened.")
+if main_module == "🌐 NETWORK WARFARE":
+    st.markdown("### \"ULTIMATE CYBER SANDBOX\"")
+    st.write("[ Live attack map simulation and interception ]")
+    
+    # محاكاة رسم بياني للهجوم (نفس الصورة)
+    chart_data = pd.DataFrame([random.random() for _ in range(20)], columns=['Attack Vector'])
+    st.line_chart(chart_data)
+    
+    tab1, tab2, tab3 = st.tabs(["SERVER INFILTRATOR", "PORT DESTROYER", "DNS POISONER"])
+    
+    with tab1:
+        cfx = st.text_input("TARGET HASH (CFX):")
+        if st.button("RUN SCAN"):
+            with st.status("Intercepting Data...") as status:
+                time.sleep(1)
+                st.write("💉 Injecting Packet Sniffer...")
+                time.sleep(1)
+                st.write("🔓 Bypassing Server Handshake...")
+                status.update(label="RECON COMPLETE", state="complete")
+            st.success("Target Intel Acquired. IP: 185.XXX.XX.XX")
 
-st.sidebar.markdown("---")
-st.sidebar.caption("System Status: **Encrypted**")
+elif main_module == "🕵️ OSINT & FORENSICS":
+    st.markdown("### 🕵️ DIGITAL ENTITY TRACING")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.button("📸 IMAGE METADATA EXTRACTOR")
+        st.button("👤 SOCIAL FOOTPRINT TRACER")
+    with col2:
+        st.button("🗺️ IP GEO-LOCATOR")
+        st.button("📧 EMAIL BREACH CHECKER")
+
+elif main_module == "🔐 CRYPTO-LAB":
+    st.markdown("### 🔐 QUANTUM ENCRYPTION HUB")
+    user_txt = st.text_area("Plaintext Input:")
+    if st.button("EXECUTE ENCRYPTION"):
+        c1, c2, c3 = st.columns(3)
+        c1.code(f"MD5:\n{hashlib.md5(user_txt.encode()).hexdigest()}")
+        c2.code(f"SHA-256:\n{hashlib.sha256(user_txt.encode()).hexdigest()}")
+        c3.code(f"BASE64:\n...Encoded...")
+
+elif main_module == "🛠️ GENERAL EXPLOITS":
+    st.markdown("### 🛠️ UNIVERSAL HACKING TOOLS")
+    tools = [
+        "Wi-Fi Deauth Simulator", "SQL Injection Tester", 
+        "XSS Payload Generator", "Password Strength Auditor",
+        "Reverse Shell Generator", "MAC Address Changer",
+        "Packet Crafter", "Subdomain Brute-Forcer",
+        "Directory Buster", "SSL Certificate Analyzer"
+    ]
+    cols = st.columns(2)
+    for i, tool in enumerate(tools):
+        cols[i % 2].checkbox(f"✔️ {tool}")
+    
+    if st.button("ACTIVATE SELECTED TOOLS"):
+        st.warning("Running batch operations... Stealth Mode Enabled.")
+
+elif main_module == "🛑 SHUTDOWN PROTOCOL":
+    if st.button("ERASE SYSTEM LOGS"):
+        st.balloons()
+        st.error("ALL SYSTEM LOGS PURGED. ERORR DISCONNECTED.")
+
+# --- 4. FOOTER: DESIGNED BY ERORR ---
+st.markdown("---")
+st.markdown("<div style='text-align: center; color: #333;'>© 2026 ERORR ULTIMATE CYBER SANDBOX | Authorized for Academic Use</div>", unsafe_allow_html=True)
