@@ -2,76 +2,64 @@ import streamlit as st
 import requests
 import json
 
-# إعداد واجهة الموقع (Theme)
-st.set_page_config(page_title="FiveM Info Tool", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="FiveM Intel & Recon", page_icon="🕵️", layout="wide")
 
-# تخصيص المظهر بـ CSS بسيط ليظهر بشكل "سبراني"
-st.markdown("""
-    <style>
-    .main { background-color: #0e1117; color: #00ff00; }
-    .stButton>button { width: 100%; background-color: #ff4b4b; color: white; }
-    </style>
-    """, unsafe_allow_html=True)
-
-def fetch_fivem_data(cfx_code):
+# دالة سحب بيانات السيرفر
+def fetch_server_data(cfx_code):
     url = f"https://servers-frontend.fivem.net/api/servers/single/{cfx_code}"
-    # التظاهر بأننا مستخدم آيفون لتخطي حماية FiveM
     headers = {'user-agent': 'ios:2.65.0:488:14:iPhone13,3'}
     try:
         response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            return response.json().get("Data", {})
-    except:
-        return None
-    return None
+        return response.json().get("Data", {}) if response.status_code == 200 else None
+    except: return None
 
-# الواجهة الرسومية
-st.title("🌐 FiveM Server Intelligence Tool")
-st.write("أداة استعلام عن سيرفرات فايف إم عبر الكود المختصر")
+# دالة سحب بيانات اللاعبين (بدون أدمن)
+def fetch_players_data(ip):
+    # نحاول الوصول للمنفذ الافتراضي الذي يعرض اللاعبين
+    url = f"http://{ip}/players.json"
+    try:
+        response = requests.get(url, timeout=5)
+        return response.json() if response.status_code == 200 else None
+    except: return None
 
-# منطقة الإدخال
-cfx_input = st.text_input("أدخل كود السيرفر (مثل qx6e89):", placeholder="qx6e89")
+st.title("🕵️ FiveM Cyber Intelligence Tool")
+cfx_input = st.text_input("Enter Server CFX Code:", placeholder="qx6e89")
 
-if st.button("تحليل البيانات Fetch Data"):
-    if cfx_input:
-        with st.spinner('جاري جلب المعلومات من Cfx.re...'):
-            server_data = fetch_fivem_data(cfx_input)
-            
-            if server_data:
-                st.success("تم العثور على السيرفر بنجاح!")
-                
-                # عرض المعلومات الأساسية في كروت
-                col1, col2, col3 = st.columns(3)
-                col1.metric("IP Address", server_data.get("connectEndPoints", ["غير معروف"])[0])
-                col2.metric("اللاعبين", f"{server_data.get('clients', 0)} / {server_data.get('sv_maxclients', 0)}")
-                col3.metric("التقييم (Upvotes)", server_data.get("upvotePower", 0))
+if st.button("Start Reconnaissance"):
+    data = fetch_server_data(cfx_input)
+    if data:
+        ip = data.get("connectEndPoints", ["Unknown"])[0]
+        
+        # --- القسم الأول: معلومات السيرفر ---
+        st.header("🏢 Server Metadata")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Server IP", ip)
+        c2.metric("Online Players", f"{data.get('clients')} / {data.get('sv_maxclients')}")
+        c3.metric("Owner", data.get("ownerName"))
 
-                st.markdown("---")
-                
-                # تفاصيل السيرفر
-                with st.container():
-                    st.subheader("📋 تفاصيل النظام")
-                    st.write(f"**اسم السيرفر:** {server_data.get('hostname', 'N/A')}")
-                    st.write(f"**صاحب السيرفر:** {server_data.get('ownerName', 'N/A')}")
-                    st.write(f"**نظام التشغيل:** {server_data.get('vars', {}).get('os', 'N/A')}")
-                
-                # فحص الحماية (Anti-Cheat)
-                st.subheader("🛡️ تحليل أمني")
-                resources = str(server_data.get('resources', []))
-                ac_list = ['shield', 'anticheat', 'eac', 'easy-anticheat', 'wave', 'phoenix']
-                detected = [ac for ac in ac_list if ac in resources.lower()]
-                
-                if detected:
-                    st.error(f"⚠️ تم كشف ملفات حماية محتملة: {', '.join(detected)}")
-                else:
-                    st.info("✅ لم يتم العثور على كلمات دلالية لبرامج حماية مشهورة.")
+        # --- القسم الثاني: قسم اللاعبين (الجديد) ---
+        st.markdown("---")
+        st.header("👥 Players Intelligence (No Admin Required)")
+        
+        players = fetch_players_data(ip)
+        
+        if players:
+            st.success(f"Successfully intercepted {len(players)} player profiles!")
+            for p in players:
+                with st.expander(f"👤 Player: {p['name']} (ID: {p['id']})"):
+                    # عرض الهويات الرقمية (Discord, Steam, License)
+                    st.write("**Digital Identifiers Found:**")
+                    for identifier in p.get('identifiers', []):
+                        if "discord" in identifier:
+                            st.code(f"Discord ID: {identifier.replace('discord:', '')}", language="text")
+                        elif "steam" in identifier:
+                            st.write(f"🔗 [Steam Profile](https://steamcommunity.com/profiles/{int(identifier.replace('steam:', ''), 16)})")
+                        else:
+                            st.text(identifier)
+                    st.info(f"Ping: {p.get('ping')}ms")
+        else:
+            st.error("⚠️ Player list is hidden or protected by a Firewall (Cfx Proxy).")
+            st.write("In Cyber Security, this means the server uses a **Reverse Proxy** to hide player data.")
 
-                # عرض البيانات الخام (لأغراض البحث العلمي)
-                with st.expander("عرض البيانات الخام (JSON)"):
-                    st.json(server_data)
-            else:
-                st.error("خطأ: الكود غير صحيح أو السيرفر مخفي.")
     else:
-        st.warning("الرجاء إدخال الكود أولاً.")
-
-st.sidebar.info("هذا الموقع صُمم كجزء من بحث في الأمن السيبراني لتحليل استغلال الـ APIs.")
+        st.error("Server not found!")
