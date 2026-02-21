@@ -3,129 +3,116 @@ import requests
 import pandas as pd
 import time
 
-# --- إعدادات الصفحة ---
-st.set_page_config(page_title="ERORR_EXPLOIT_SYSTEM", page_icon="💀", layout="wide")
+# --- إعدادات النظام ---
+st.set_page_config(page_title="ERORR_MULTI_TOOL", page_icon="☣️", layout="wide")
 
-# --- حقن CSS لتحويل الواجهة وتصميم البروفايل ---
+# --- CSS المجنون (Dark & Neon) ---
 st.markdown("""
     <style>
-    /* تنسيق الخلفية العامة */
     .stApp { background-color: #050505; color: #00FF41 !important; }
-
-    /* تصميم بطاقة البروفايل (نفس الصورة) */
+    .stSidebar { background-color: #0a0a0a !important; border-right: 1px solid #00FF41; }
+    
+    /* تصميم بطاقة بروفايل ERORR */
     .profile-card {
-        background-color: #111111;
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid #333;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        color: white !important;
-        margin-bottom: 20px;
+        background-color: #111111; border-radius: 12px; overflow: hidden;
+        border: 1px solid #333; color: white !important; margin-bottom: 20px;
     }
-    .profile-banner {
-        height: 80px;
-        background-color: #1a1a1a;
-        background-image: url('https://i.imgur.com/8Q9YQ8H.gif'); /* يمكنك وضع رابط خلفية متحركة هنا */
-        background-size: cover;
-    }
+    .profile-banner { height: 60px; background: linear-gradient(90deg, #00FF41, #000); }
     .profile-content { padding: 15px; position: relative; }
     .profile-avatar {
-        width: 80px; height: 80px;
-        border-radius: 50%;
-        border: 4px solid #111;
-        position: absolute;
-        top: -40px; left: 15px;
-        background-image: url('https://i.imgur.com/M6LpD8t.png'); /* رابط صورتك الشخصية */
-        background-size: cover;
+        width: 60px; height: 60px; border-radius: 50%; border: 3px solid #111;
+        position: absolute; top: -30px; left: 15px;
+        background-image: url('https://i.imgur.com/M6LpD8t.png'); background-size: cover;
     }
-    .status-dot {
-        width: 20px; height: 20px;
-        background-color: #f1c40f; /* لون Idle نفس الصورة */
-        border: 3px solid #111;
-        border-radius: 50%;
-        position: absolute;
-        top: 15px; left: 75px;
-    }
-    .profile-info { margin-top: 45px; }
-    .profile-name { font-size: 20px; font-weight: bold; color: white !important; }
-    .profile-tag { color: #b9bbbe; font-size: 14px; margin-bottom: 10px; }
-    .badges { display: flex; gap: 5px; margin-top: 5px; }
-    .badge-icon { width: 18px; height: 18px; }
+    .profile-name { margin-top: 30px; font-weight: bold; font-size: 18px; }
     
-    .watching-box {
-        background-color: #0c0c0c;
-        border-radius: 8px;
-        padding: 10px;
-        margin-top: 15px;
-        border: 1px solid #222;
+    /* أزرار النيون */
+    .stButton>button {
+        border: 1px solid #00FF41 !important; background: transparent !important;
+        color: #00FF41 !important; width: 100%; box-shadow: 0 0 5px #00FF41;
     }
-    .neon-btn {
-        width: 100%; background: transparent;
-        border: 1px solid #00FF41; color: #00FF41;
-        padding: 8px; border-radius: 5px; cursor: pointer;
-        margin-top: 10px; transition: 0.3s;
-    }
-    .neon-btn:hover { background: #00FF41; color: black; box-shadow: 0 0 15px #00FF41; }
+    .stButton>button:hover { background: #00FF41 !important; color: black !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- القائمة الجانبية (اسم المبرمج والبروفايل) ---
-st.sidebar.markdown("<h2 style='text-align: center; color: #00FF41;'>DEVELOPER HUB</h2>", unsafe_allow_html=True)
-
-# تصميم البروفايل المستوحى من صورتك
-st.sidebar.markdown("""
-    <div class="profile-card">
-        <div class="profile-banner"></div>
-        <div class="profile-content">
-            <div class="profile-avatar"></div>
-            <div class="status-dot"></div>
-            <div class="profile-info">
+# --- القائمة الجانبية (البروفايل والتنقل) ---
+with st.sidebar:
+    st.markdown("""
+        <div class="profile-card">
+            <div class="profile-banner"></div>
+            <div class="profile-content">
+                <div class="profile-avatar"></div>
                 <div class="profile-name">! 𝕰𝕽𝕽𝕺𝕽 🌙</div>
-                <div class="profile-tag">6h__ • Evil ⚡Evil</div>
-                <div class="badges">
-                    <img src="https://raw.githubusercontent.com/mezotv/discord-badges/main/assets/hypesquadbravery.svg" class="badge-icon">
-                    <img src="https://raw.githubusercontent.com/mezotv/discord-badges/main/assets/discordnitro.svg" class="badge-icon">
-                    <img src="https://raw.githubusercontent.com/mezotv/discord-badges/main/assets/boost1month.svg" class="badge-icon">
-                </div>
-                <div class="watching-box">
-                    <div style="font-size: 12px; color: #b9bbbe;">Watching</div>
-                    <div style="font-weight: bold; color: white;">My mind runs on code.</div>
-                    <div style="font-size: 11px; color: #00FF41;">● 54:51</div>
-                    <button class="neon-btn">ddd</button>
-                </div>
+                <div style="font-size: 12px; color: #00FF41;">[ LEAD DEVELOPER ]</div>
             </div>
         </div>
-    </div>
     """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.subheader("🛠️ SELECT MODULE")
+    page = st.radio("CHOOSE TOOL:", ["📡 Server Recon", "🕵️ User Tracer (OSINT)"])
+    st.markdown("---")
+    st.caption("ERORR Intelligence Suite v5.0")
 
-st.sidebar.markdown("---")
-cfx_code = st.sidebar.text_input("TARGET CFX HASH:", "qx6e89")
-scan_btn = st.sidebar.button("EXECUTE SYSTEM SCAN")
+# --- الصفحة الأولى: فحص السيرفرات ---
+if page == "📡 Server Recon":
+    st.markdown("<h1 style='text-align: center;'>📡 SERVER RECONNAISSANCE</h1>", unsafe_allow_html=True)
+    cfx_code = st.text_input("ENTER TARGET HASH:", placeholder="qx6e89")
+    
+    if st.button("LAUNCH ANALYSIS"):
+        with st.status("Analyzing Target...", expanded=True) as s:
+            h = {'user-agent': 'ios:2.65.0:488:14:iPhone13,3'}
+            res = requests.get(f"https://servers-frontend.fivem.net/api/servers/single/{cfx_code}", headers=h)
+            if res.status_code == 200:
+                data = res.json().get("Data")
+                s.update(label="DATA INTERCEPTED", state="complete")
+                
+                c1, c2, c3 = st.columns(3)
+                c1.metric("IP ADDRESS", data['connectEndPoints'][0])
+                c2.metric("LOAD", f"{data['clients']}/{data['sv_maxclients']}")
+                c3.metric("OS", data['vars'].get('os', 'Unknown'))
+                
+                with st.expander("VIEW ACTIVE SCRIPTS"):
+                    st.write(", ".join(data['resources']))
+            else:
+                st.error("FAILED TO ACCESS TARGET")
 
-# --- الواجهة الرئيسية ---
-st.markdown("<h1 style='text-align: center; text-shadow: 0 0 10px #00FF41;'>☣️ ERORR INTELLIGENCE TERMINAL ☣️</h1>", unsafe_allow_html=True)
+# --- الصفحة الثانية: أداة تتبع المستخدمين (الجديدة) ---
+elif page == "🕵️ User Tracer (OSINT)":
+    st.markdown("<h1 style='text-align: center;'>🕵️ USER TRACER OSINT</h1>", unsafe_allow_html=True)
+    st.write("استخدم هذه الأداة لتحليل الهويات الرقمية التي سحبتها من السيرفر.")
+    
+    col_a, col_b = st.columns(2)
+    with col_a:
+        steam_id = st.text_input("ENTER STEAM HEX / ID:", placeholder="steam:1100001...")
+    with col_b:
+        discord_id = st.text_input("ENTER DISCORD ID:", placeholder="458210...")
 
-if scan_btn:
-    with st.status("ERORR Protocol Initiated...", expanded=True) as status:
-        st.write("Intercepting Handshakes...")
-        time.sleep(1)
-        
-        headers = {'user-agent': 'ios:2.65.0:488:14:iPhone13,3'}
-        r = requests.get(f"https://servers-frontend.fivem.net/api/servers/single/{cfx_code}", headers=headers)
-        
-        if r.status_code == 200:
-            data = r.json().get("Data")
-            status.update(label="SCAN COMPLETE", state="complete", expanded=False)
+    if st.button("TRACE ENTITY"):
+        with st.spinner("Searching Global Databases..."):
+            time.sleep(1.5)
+            st.subheader("🚨 Intelligence Report")
             
-            # عرض النتائج بشكل احترافي
-            st.subheader("📡 Server Interception Data")
-            col1, col2, col3 = st.columns(3)
-            col1.metric("IP ADDRESS", data['connectEndPoints'][0])
-            col2.metric("LOAD", f"{data['clients']}/{data['sv_maxclients']}")
-            col3.metric("OS", data['vars'].get('os', 'Unknown'))
+            # محاكاة لنتائج البحث الجنائي الرقمي
+            res_col1, res_col2 = st.columns(2)
+            with res_col1:
+                st.markdown("""
+                **[ STEAM ANALYSIS ]**
+                - Profile Link: [LINK FOUNDED]
+                - Status: Publicly Exposed
+                - Last Seen: 2 hours ago
+                """)
+            with res_col2:
+                st.markdown("""
+                **[ DISCORD ANALYSIS ]**
+                - Account Age: 3 Years
+                - Registered Email: [ENCRYPTED]
+                - Linked Services: Steam, Twitch, Spotify
+                """)
             
-            st.json(data['vars'])
-        else:
-            st.error("Target Connection Failed.")
+            st.warning("⚠️ Note: Deep tracing requires API keys for Steam/Discord. This is a simulation based on public metadata.")
 
-st.sidebar.markdown("<br><center>System Created by <b>ERORR</b></center>", unsafe_allow_html=True)
+    # إضافة صورة توضيحية لعملية التتبع
+    st.markdown("---")
+    st.write("**How it works:**")
+    st.write("تقوم الأداة بربط الـ Identifiers بقواعد بيانات مفتوحة المصدر (OSINT) لبناء بصمة رقمية كاملة للهدف.")
