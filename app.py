@@ -1,65 +1,85 @@
 import streamlit as st
 import requests
-import json
+import pandas as pd
+import socket
+import folium
+from streamlit_folium import st_folium
 
-st.set_page_config(page_title="FiveM Intel & Recon", page_icon="🕵️", layout="wide")
+st.set_page_config(page_title="FiveM Cyber Auditor", page_icon="🛡️", layout="wide")
 
-# دالة سحب بيانات السيرفر
-def fetch_server_data(cfx_code):
-    url = f"https://servers-frontend.fivem.net/api/servers/single/{cfx_code}"
+def get_geo_info(ip):
+    try:
+        res = requests.get(f"http://ip-api.com/json/{ip}").json()
+        return res
+    except: return None
+
+def check_port(ip, port):
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        result = sock.connect_ex((ip.split(':')[0], port))
+        sock.close()
+        return result == 0
+    except: return False
+
+# واجهة الموقع
+st.title("🛡️ FiveM Server Security Auditor")
+cfx_code = st.sidebar.text_input("Enter Target CFX:", "qx6e89")
+
+if st.sidebar.button("Run Full Security Audit"):
     headers = {'user-agent': 'ios:2.65.0:488:14:iPhone13,3'}
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        return response.json().get("Data", {}) if response.status_code == 200 else None
-    except: return None
-
-# دالة سحب بيانات اللاعبين (بدون أدمن)
-def fetch_players_data(ip):
-    # نحاول الوصول للمنفذ الافتراضي الذي يعرض اللاعبين
-    url = f"http://{ip}/players.json"
-    try:
-        response = requests.get(url, timeout=5)
-        return response.json() if response.status_code == 200 else None
-    except: return None
-
-st.title("🕵️ FiveM Cyber Intelligence Tool")
-cfx_input = st.text_input("Enter Server CFX Code:", placeholder="qx6e89")
-
-if st.button("Start Reconnaissance"):
-    data = fetch_server_data(cfx_input)
+    data = requests.get(f"https://servers-frontend.fivem.net/api/servers/single/{cfx_code}", headers=headers).json().get("Data")
+    
     if data:
-        ip = data.get("connectEndPoints", ["Unknown"])[0]
+        full_ip = data['connectEndPoints'][0]
+        pure_ip = full_ip.split(':')[0]
         
-        # --- القسم الأول: معلومات السيرفر ---
-        st.header("🏢 Server Metadata")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Server IP", ip)
-        c2.metric("Online Players", f"{data.get('clients')} / {data.get('sv_maxclients')}")
-        c3.metric("Owner", data.get("ownerName"))
+        # --- قسم الخريطة والموقع ---
+        st.header("📍 Server Geo-Location")
+        geo = get_geo_info(pure_ip)
+        if geo and geo['status'] == 'success':
+            m = folium.Map(location=[geo['lat'], geo['lon']], zoom_start=10)
+            folium.Marker([geo['lat'], geo['lon']], popup=geo['isp']).add_to(m)
+            st_folium(m, height=300, width=1200)
+            st.write(f"**Hosting:** {geo['isp']} | **City:** {geo['city']}, {geo['country']}")
 
-        # --- القسم الثاني: قسم اللاعبين (الجديد) ---
+        # --- قسم فحص الثغرات (Vulnerability Scanner) ---
         st.markdown("---")
-        st.header("👥 Players Intelligence (No Admin Required)")
+        st.header("🔍 Security Vulnerability Report")
+        col1, col2 = st.columns(2)
         
-        players = fetch_players_data(ip)
-        
-        if players:
-            st.success(f"Successfully intercepted {len(players)} player profiles!")
-            for p in players:
-                with st.expander(f"👤 Player: {p['name']} (ID: {p['id']})"):
-                    # عرض الهويات الرقمية (Discord, Steam, License)
-                    st.write("**Digital Identifiers Found:**")
-                    for identifier in p.get('identifiers', []):
-                        if "discord" in identifier:
-                            st.code(f"Discord ID: {identifier.replace('discord:', '')}", language="text")
-                        elif "steam" in identifier:
-                            st.write(f"🔗 [Steam Profile](https://steamcommunity.com/profiles/{int(identifier.replace('steam:', ''), 16)})")
-                        else:
-                            st.text(identifier)
-                    st.info(f"Ping: {p.get('ping')}ms")
+        with col1:
+            st.subheader("🛠️ Port Scanning")
+            # فحص الـ RCON (أخطر ثغرة في فايف ام)
+            is_rcon_open = check_port(pure_ip, 30120) # المنفذ الافتراضي
+            if is_rcon_open:
+                st.error("❌ CRITICAL: RCON Port (30120) is Open! Possible Remote Code Execution.")
+            else:
+                st.success("✅ RCON Port is filtered/closed.")
+
+            # فحص قاعدة البيانات (MySQL/MariaDB)
+            if check_port(pure_ip, 3306):
+                st.warning("⚠️ WARNING: MySQL Port (3306) is Publicly Exposed. Risk of Brute Force.")
+
+        with col2:
+            st.subheader("📄 Configuration Leaks")
+            # فحص ملفات الحساسة
+            test_files = ["/players.json", "/info.json", "/dynamic.json"]
+            for file in test_files:
+                try:
+                    r = requests.get(f"http://{full_ip}{file}", timeout=2)
+                    if r.status_code == 200:
+                        st.warning(f"⚠️ Information Leak: `{file}` is accessible to anyone.")
+                except: pass
+
+        # --- قسم تحليل الـ Artifacts (الإصدار) ---
+        st.markdown("---")
+        server_version = data['vars'].get('gamename', 'Unknown')
+        st.subheader(f"⚙️ Artifacts Analysis: {data.get('server', 'N/A')}")
+        if "linux" in data.get('server', '').lower():
+            st.info("System running on Linux. Generally more secure against certain exploits.")
         else:
-            st.error("⚠️ Player list is hidden or protected by a Firewall (Cfx Proxy).")
-            st.write("In Cyber Security, this means the server uses a **Reverse Proxy** to hide player data.")
+            st.warning("System running on Windows. Ensure latest security patches are applied.")
 
     else:
-        st.error("Server not found!")
+        st.error("Could not reach server.")
